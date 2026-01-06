@@ -1,8 +1,45 @@
-# Yubikeys-cheatsheet
+# YubiKeys-cheatsheet
 
-This repo contains tips on how to properly use your Yubikeys.
+This repo contains tips on how to properly use your YubiKeys.
 
-## Sign you commits with your Yubikey
+- Step by step YubiKey setup
+- Tutorial: how to sign GitHub commits with YubiKey
+- More to come
+
+---
+
+
+## 1️⃣ YubiKey set up
+
+Before using your YubiKey to sign Git commits, you need to set up your devices.  
+
+### Download required tools
+
+- **Yubico Authenticator** (for OpenPGP interface & passkeys)  
+  🔗 [Download here](https://www.yubico.com/products/yubico-authenticator/#h-download-yubico-authenticator)
+
+- **YubiKey Manager** (for `ykman` command-line)  
+  🔗 [Download release 5.8.0](https://github.com/Yubico/Yubikey-manager/releases/tag/5.8.0)
+
+---
+
+### Steps to repeat on all your YubiKeys
+
+1. Verify your device is genuine:  
+   🔗 [Yubico Genuine Check](https://www.yubico.com/genuine/)
+
+2. Set a PIN on the YubiKey  
+   - Use Yubico Authenticator → **Passkeys** tab  
+   - PIN should be **4–6 digits**  
+   - ⚠️ Recommended: use the **same PIN on all your YubiKeys** for simplicity
+
+3. Enable user verification for FIDO (optional but recommended)  
+
+```bash
+ykman fido config toggle-always-uv
+```
+
+## 2️⃣ Sign your commits with your YubiKey
 
 ### Prerequisites
 
@@ -15,8 +52,7 @@ Before you begin, make sure you have:
   GitHub: https://github.com/gpg/gnupg
 
 - Installed **YubiKey Manager** (for `ykman`)  
-  GitHub: https://github.com/Yubico/yubikey-manager
-
+  GitHub: https://github.com/Yubico/YubiKey-manager
 
 ### 🔐 YubiKey GPG (ed25519) → Signed Git Commit
 
@@ -120,8 +156,8 @@ Expect to see `ED25519 / CV25519` for the three slots.
 
 ```bash
 EMAIL="you@example.com"
-gpg --armor --export "$EMAIL" > ~/yubikey-gpg-public.asc
-cat ~/yubikey-gpg-public.asc
+gpg --armor --export "$EMAIL" > ~/YubiKey-gpg-public.asc
+cat ~/YubiKey-gpg-public.asc
 ```
 
 ➡️ copy everything and paste at: https://github.com/settings/keys  →  "New GPG key"
