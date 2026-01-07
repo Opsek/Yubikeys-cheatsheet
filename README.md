@@ -6,12 +6,9 @@ This repo contains tips on how to properly use your YubiKeys.
 - Tutorial on how to sign GitHub commits with YubiKey
 - More to come 😉
 
----
-
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ## 1️⃣ YubiKey set up
-
-Before using your YubiKey to sign Git commits, you need to set up your devices.  
 
 ### Download required tools
 
@@ -21,16 +18,12 @@ Before using your YubiKey to sign Git commits, you need to set up your devices.
 - **YubiKey Manager** (for `ykman` command-line)  
   🔗 [Download release 5.8.0](https://github.com/Yubico/Yubikey-manager/releases/tag/5.8.0)
 
----
-
 ### 📹 Tutorial Video
 
-Watch a step-by-step video covering all of the steps above:  
+Watch a step-by-step video covering all of the steps:  
 👉 [Watch the tutorial video](https://drive.google.com/file/d/1qxiXehIEOEhaRE4ae_PsudLVubsnKyEN/view?usp=sharing)
 
-![YubiKey Tutorial](yubikey-tutorial.png)
-
----
+[![YubiKey Tutorial](yubikey-tutorial.png)](https://drive.google.com/file/d/1qxiXehIEOEhaRE4ae_PsudLVubsnKyEN/view?usp=sharing)
 
 ### Steps to repeat on all your YubiKeys
 
@@ -57,8 +50,6 @@ Now register them on **all of your accounts**.
 You can check which apps and platforms support YubiKeys here:  
 👉 https://safecheck.opsek.io/
 
----
-
 #### Example: Set up a YubiKey on Gmail (Google Account)
 
 1. Go to **Google Account Settings**
@@ -70,7 +61,6 @@ You can check which apps and platforms support YubiKeys here:
    - *or* **Add a passkey** and **save it directly on the YubiKey**
 7. Insert your YubiKey and follow the on-screen instructions
 8. Once registered, rename your YubiKeys (Nano, 5C NFC 1, 5C NFC backup)
----
 
 #### ⚠️ Important Notes
 
@@ -80,13 +70,12 @@ If you registered your YubiKey and **it did not ask you for a PIN**, you probabl
 Password managers should **only** be used to store passwords.  
 Your YubiKey should be the **only place** where the passkey/security key is stored.
 
----
-
 #### Best practices
 - Register **at least two YubiKeys** (primary + backup)
 - Keep your backup key in a safe, separate location
 - Test sign-in with each key after setup
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ## 2️⃣ Sign your commits with your YubiKey
 
