@@ -23,6 +23,15 @@ Before using your YubiKey to sign Git commits, you need to set up your devices.
 
 ---
 
+### 📹 Tutorial Video
+
+Watch a step-by-step video covering all of the steps above:  
+👉 [Watch the tutorial video](https://drive.google.com/file/d/1qxiXehIEOEhaRE4ae_PsudLVubsnKyEN/view?usp=sharing)
+
+![YubiKey Tutorial](yubikey-tutorial.png)
+
+---
+
 ### Steps to repeat on all your YubiKeys
 
 1. Verify your device is genuine:  
@@ -70,13 +79,6 @@ If you registered your YubiKey and **it did not ask you for a PIN**, you probabl
 **Do NOT store passkeys or security keys in 1Password or any password manager**  
 Password managers should **only** be used to store passwords.  
 Your YubiKey should be the **only place** where the passkey/security key is stored.
-
----
-
-#### 📹 Tutorial Video
-
-Watch a step-by-step video covering all of the steps above:  
-👉 *(add tutorial link here)*
 
 ---
 
