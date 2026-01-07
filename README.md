@@ -3,8 +3,8 @@
 This repo contains tips on how to properly use your YubiKeys.
 
 - Step by step YubiKey setup
-- Tutorial: how to sign GitHub commits with YubiKey
-- More to come
+- Tutorial on how to sign GitHub commits with YubiKey
+- More to come 😉
 
 ---
 
@@ -15,7 +15,7 @@ Before using your YubiKey to sign Git commits, you need to set up your devices.
 
 ### Download required tools
 
-- **Yubico Authenticator** (for OpenPGP interface & passkeys)  
+- **Yubico Authenticator** (To manage interfaces and set a PIN)  
   🔗 [Download here](https://www.yubico.com/products/yubico-authenticator/#h-download-yubico-authenticator)
 
 - **YubiKey Manager** (for `ykman` command-line)  
@@ -26,18 +26,65 @@ Before using your YubiKey to sign Git commits, you need to set up your devices.
 ### Steps to repeat on all your YubiKeys
 
 1. Verify your device is genuine:  
-   🔗 [Yubico Genuine Check](https://www.yubico.com/genuine/)
+   🔗 [Yubico genuine check](https://www.yubico.com/genuine/)
 
 2. Set a PIN on the YubiKey  
    - Use Yubico Authenticator → **Passkeys** tab  
    - PIN should be **4–6 digits**  
    - ⚠️ Recommended: use the **same PIN on all your YubiKeys** for simplicity
 
-3. Enable user verification for FIDO (optional but recommended)  
+3. Enforce the PIN request when using FIDO (optional but recommended)  
 
 ```bash
 ykman fido config toggle-always-uv
 ```
+> 💡 Not supported on old Yubikeys, firmware prior to 5.7
+>
+
+### ✅ Your YubiKeys are ready
+
+Now register them on **all of your accounts**.
+
+You can check which apps and platforms support YubiKeys here:  
+👉 https://safecheck.opsek.io/
+
+---
+
+#### Example: Set up a YubiKey on Gmail (Google Account)
+
+1. Go to **Google Account Settings**
+2. Open **Security**
+3. Go to **Signing in to Google**
+4. Enable **2-Step Verification (2FA)** if it’s not already enabled
+5. Navigate to **Passkeys & Security Keys**
+6. Click **Add security key**  
+   - *or* **Add a passkey** and **save it directly on the YubiKey**
+7. Insert your YubiKey and follow the on-screen instructions
+
+---
+
+#### ⚠️ Important Notes
+
+‼️ If you registered your YubiKey and **it did not ask you for a PIN**, you probably missed a step or did not complete the setup correctly. Make sure a **FIDO2 PIN is set** on the YubiKey and that you are adding a **security key / passkey**, not a less secure method.
+
+‼️ **Do NOT store passkeys or security keys in 1Password or any password manager**  
+Password managers should **only** be used to store passwords.  
+Your YubiKey should be the **only place** where the passkey/security key is stored.
+
+---
+
+#### 📹 Tutorial Video
+
+Watch a step-by-step video covering all of the steps above:  
+👉 *(add tutorial link here)*
+
+---
+
+#### Best practices
+- Register **at least two YubiKeys** (primary + backup)
+- Keep your backup key in a safe, separate location
+- Test sign-in with each key after setup
+
 
 ## 2️⃣ Sign your commits with your YubiKey
 
