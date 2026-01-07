@@ -60,14 +60,14 @@ You can check which apps and platforms support YubiKeys here:
 6. Click **Add security key**  
    - *or* **Add a passkey** and **save it directly on the YubiKey**
 7. Insert your YubiKey and follow the on-screen instructions
-
+8. Once registered, rename your YubiKeys (Nano, 5C NFC 1, 5C NFC backup)
 ---
 
 #### ⚠️ Important Notes
 
-‼️ If you registered your YubiKey and **it did not ask you for a PIN**, you probably missed a step or did not complete the setup correctly. Make sure a **FIDO2 PIN is set** on the YubiKey and that you are adding a **security key / passkey**, not a less secure method.
+If you registered your YubiKey and **it did not ask you for a PIN**, you probably missed a step or did not complete the setup correctly. Make sure a **FIDO2 PIN is set** on the YubiKey and that you are adding a **security key / passkey**, not a less secure method.
 
-‼️ **Do NOT store passkeys or security keys in 1Password or any password manager**  
+**Do NOT store passkeys or security keys in 1Password or any password manager**  
 Password managers should **only** be used to store passwords.  
 Your YubiKey should be the **only place** where the passkey/security key is stored.
 
