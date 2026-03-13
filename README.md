@@ -29,7 +29,7 @@ This repo contains tips on how to properly use your YubiKeys.
   🔗 [Download here](https://www.yubico.com/products/yubico-authenticator/#h-download-yubico-authenticator)
 
 - **YubiKey Manager** (for `ykman` command-line)  
-  🔗 [Download release 5.8.0](https://github.com/Yubico/Yubikey-manager/releases/tag/5.8.0)
+  🔗 [Download last release](https://github.com/Yubico/Yubikey-manager/releases/)
 
 ### 📹 Tutorial Video
 
