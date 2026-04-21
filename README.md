@@ -11,8 +11,8 @@ This repo contains tips on how to properly use your YubiKeys.
 | Interface / App | What it is | Phishing-resistant | How you use it | Where / When to use it | Concrete examples |
 |-----------------|------------|--------------------|---------------|------------------------|-------------------|
 | **FIDO2** | Modern passwordless and 2FA authentication standard (WebAuthn + CTAP2) | **Yes** | Touch the YubiKey when prompted by the browser or OS | Best choice for web logins and OS authentication | Register passkeys on Google, GitHub, Microsoft, AWS; passwordless login or strong 2FA |
-| **FIDO U2F** | Legacy FIDO standard (CTAP1), requires password first | **Yes** | Enter username/password, then touch the YubiKey | Older services that don’t support full FIDO2 | GitHub legacy security key login; older VPNs, NAS devices |
-| **OATH (TOTP / HOTP)** | One-time password generator stored on the YubiKey | **No** | Use **Yubico Authenticator** to read 6- or 8-digit codes | When a service only supports OTP-based 2FA | Generate TOTP for GitHub, Google, servers; fallback if passkeys/security keys aren’t supported |
+| **FIDO U2F** | Legacy FIDO standard (CTAP1), requires password first | **Yes** | Enter username/password, then touch the YubiKey | Older services that don't support full FIDO2 | GitHub legacy security key login; older VPNs, NAS devices |
+| **OATH (TOTP / HOTP)** | One-time password generator stored on the YubiKey | **No** | Use **Yubico Authenticator** to read 6- or 8-digit codes | When a service only supports OTP-based 2FA | Generate TOTP for GitHub, Google, servers; fallback if passkeys/security keys aren't supported |
 | **OpenPGP** | Smart card for PGP keys (signing, encryption, authentication) | **Yes** (for auth & signing) | Use `gpg`, email clients, SSH via GPG agent | Developer workflows, cryptographic identity | Sign Git commits; encrypt/decrypt emails; SSH login using GPG |
 | **PIV (Smart Card)** | PKI smart card using X.509 certificates | **Yes** | Used automatically by OS, browsers, VPN clients | Enterprise, government, system authentication | Windows/macOS smart-card login; VPN authentication; client TLS certificates |
 | **Yubico OTP** | Yubico proprietary one-time password | **No** | Touch key to type a long OTP string | Legacy systems and simple integrations | PAM authentication on servers; legacy VPNs; Yubico validation service |
@@ -68,7 +68,7 @@ You can check which apps and platforms support YubiKeys here:
 1. Go to **Google Account Settings**
 2. Open **Security**
 3. Go to **Signing in to Google**
-4. Enable **2-Step Verification (2FA)** if it’s not already enabled
+4. Enable **2-Step Verification (2FA)** if it's not already enabled
 5. Navigate to **Passkeys & Security Keys**
 6. Click **Add security key**  
    - *or* **Add a passkey** and **save it directly on the YubiKey**
@@ -149,6 +149,19 @@ At the `gpg>` prompt, type exactly this (press ⏎ after each line):
 admin
 key-attr
 ```
+
+> ### 🔑 About the "passphrase" prompt inside `gpg --card-edit`
+>
+> When you're in the `gpg --card-edit` interface, the **"passphrase"** being requested is actually the **PIN for your YubiKey's OpenPGP applet** — not your SSH passphrase or your GPG key passphrase.
+>
+> The OpenPGP applet uses **two separate PINs**:
+>
+> - **User PIN** (default: `123456`) — used for day-to-day operations like signing, decrypting, and authenticating.
+> - **Admin PIN** (default: `12345678`) — used for administrative changes like modifying key attributes, generating keys on the card, or resetting the User PIN.
+>
+> Since `key-attr` is an **admin-level operation**, the prompt is asking for the **Admin PIN**. If you've never changed it, enter `12345678`. You'll also be prompted for the **User PIN** (`123456` by default) during key generation. You should change both PINs (see step 2 above, or use `passwd` inside `gpg --card-edit`) before loading any real keys onto the device.
+>
+> 💡 **"Nothing happens when I type my PIN"** — that's expected behavior. The PIN entry prompt (via `pinentry`) hides all input, so you won't see characters, dots, or asterisks as you type. Just type the PIN and press **Enter**.
 
 Then, when prompted **for each slot**, choose:
 
@@ -253,4 +266,4 @@ git commit -S -m "test: signed commit"
 git log --show-signature -1
 ```
 
-You should see a **“Good signature”** message.
+You should see a **"Good signature"** message.
