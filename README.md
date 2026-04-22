@@ -99,15 +99,44 @@ Before you begin, make sure you have:
 - Enabled the **OpenPGP interface** on your YubiKey (via Yubico Authenticator)  
   🔗 https://www.yubico.com/products/yubico-authenticator/
 
-- Installed **GnuPG (GPG)**  
+- Installed **GnuPG (GPG)**: on macOS: `brew install gnupg`  
   GitHub: https://github.com/gpg/gnupg
 
-- Installed **YubiKey Manager** (for `ykman`)  
+- Installed **YubiKey Manager** (for `ykman`): on macOS: `brew install ykman`  
   GitHub: https://github.com/Yubico/YubiKey-manager
 
 ### 🔐 YubiKey GPG (ed25519) → Signed Git Commit
 
-#### 1) Configure GPG for terminal prompts (no GUI)
+#### 1) Configure GPG pinentry
+
+GPG needs a **pinentry program** to securely prompt you for your PIN. Pick the path that matches your setup:
+
+##### 🍎 macOS (recommended: native GUI popup)
+
+Install `pinentry-mac` so GPG can show a native macOS popup when your PIN is needed:
+
+```bash
+brew install pinentry-mac
+
+mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
+
+# Tell gpg-agent to use pinentry-mac
+echo "pinentry-program $(brew --prefix)/bin/pinentry-mac" >> ~/.gnupg/gpg-agent.conf
+
+# Reload the agent so the change takes effect
+gpgconf --kill scdaemon
+gpgconf --kill gpg-agent
+```
+
+> ⚠️ **Do NOT add `pinentry-mode loopback` to `gpg.conf` on macOS.** It forces GPG to prompt inside the terminal and **breaks PIN entry inside `gpg --card-edit`** on recent GnuPG versions (2.4+/2.5+): keypresses are silently swallowed and the prompt appears frozen. If you hit this, jump to [🛠️ Troubleshooting](#%EF%B8%8F-troubleshooting-pin-prompt-doesnt-respond).
+
+##### 🐧 Linux (desktop)
+
+Most distros install `pinentry-gtk` or `pinentry-qt` automatically with GPG. Nothing to do: just make sure `gpg-agent` is running.
+
+##### 🖥️ Headless / SSH session (no GUI available)
+
+**Only use this if you truly have no GUI** (e.g., signing over SSH on a remote box). It forces terminal-only PIN prompts:
 
 ```bash
 mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
@@ -117,11 +146,9 @@ use-agent
 pinentry-mode loopback
 EOF
 
-# allow loopback in the agent (no GUI pinentry needed)
 grep -q '^allow-loopback-pinentry' ~/.gnupg/gpg-agent.conf 2>/dev/null || \
   echo 'allow-loopback-pinentry' >> ~/.gnupg/gpg-agent.conf
 
-# reload agent
 gpgconf --kill gpg-agent
 ```
 
@@ -152,16 +179,16 @@ key-attr
 
 > ### 🔑 About the "passphrase" prompt inside `gpg --card-edit`
 >
-> When you're in the `gpg --card-edit` interface, the **"passphrase"** being requested is actually the **PIN for your YubiKey's OpenPGP applet** — not your SSH passphrase or your GPG key passphrase.
+> When you're in the `gpg --card-edit` interface, the **"passphrase"** being requested is actually the **PIN for your YubiKey's OpenPGP applet**: not your SSH passphrase or your GPG key passphrase.
 >
 > The OpenPGP applet uses **two separate PINs**:
 >
-> - **User PIN** (default: `123456`) — used for day-to-day operations like signing, decrypting, and authenticating.
-> - **Admin PIN** (default: `12345678`) — used for administrative changes like modifying key attributes, generating keys on the card, or resetting the User PIN.
+> - **User PIN** (default: `123456`): used for day-to-day operations like signing, decrypting, and authenticating.
+> - **Admin PIN** (default: `12345678`): used for administrative changes like modifying key attributes, generating keys on the card, or resetting the User PIN.
 >
 > Since `key-attr` is an **admin-level operation**, the prompt is asking for the **Admin PIN**. If you've never changed it, enter `12345678`. You'll also be prompted for the **User PIN** (`123456` by default) during key generation. You should change both PINs (see step 2 above, or use `passwd` inside `gpg --card-edit`) before loading any real keys onto the device.
 >
-> 💡 **"Nothing happens when I type my PIN"** — that's expected behavior. The PIN entry prompt (via `pinentry`) hides all input, so you won't see characters, dots, or asterisks as you type. Just type the PIN and press **Enter**.
+> 💡 On macOS, the PIN prompt appears as a **`pinentry-mac` popup window**: not inside the terminal. If no popup appears and typing in the terminal does nothing, see [🛠️ Troubleshooting](#%EF%B8%8F-troubleshooting-pin-prompt-doesnt-respond).
 
 Then, when prompted **for each slot**, choose:
 
@@ -267,3 +294,78 @@ git log --show-signature -1
 ```
 
 You should see a **"Good signature"** message.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 🛠️ Troubleshooting: PIN prompt doesn't respond
+
+**Symptom:** You run `gpg --card-edit`, type `admin` → `key-attr`, and when GPG asks for the PIN (or "passphrase"), **nothing happens when you type**: no characters, no dots, no error, no popup. Pressing Enter does nothing and the terminal appears frozen.
+
+**Cause (macOS):** Your `~/.gnupg/gpg.conf` contains `pinentry-mode loopback`, which tells GPG to prompt inside the terminal instead of using a pinentry program. On recent GnuPG versions (2.4+ / 2.5+), **this terminal prompt does not work inside `gpg --card-edit`'s interactive REPL**: keypresses are swallowed and you're stuck.
+
+**Fix:** Disable loopback mode and use `pinentry-mac` instead (the native macOS GUI popup).
+
+### Step-by-step fix (macOS)
+
+1. **Confirm which `gpg` you're running**: it should be Homebrew's, not GPG Suite's:
+   ```bash
+   which gpg
+   gpg --version
+   ```
+   Expected: `/opt/homebrew/bin/gpg` (Apple Silicon) or `/usr/local/bin/gpg` (Intel), version ≥ 2.4. If you see `/usr/local/MacGPG2/...`, uninstall GPG Suite: it conflicts with Homebrew's `gpg` and is a frequent cause of pinentry weirdness.
+
+2. **Install `pinentry-mac`:**
+   ```bash
+   brew install pinentry-mac
+   which pinentry-mac   # should print /opt/homebrew/bin/pinentry-mac
+   ```
+
+3. **Wire it into `gpg-agent.conf`** (skip if already done):
+   ```bash
+   echo "pinentry-program $(brew --prefix)/bin/pinentry-mac" >> ~/.gnupg/gpg-agent.conf
+   ```
+
+4. **Check your current config for the loopback lines:**
+   ```bash
+   cat ~/.gnupg/gpg.conf
+   cat ~/.gnupg/gpg-agent.conf
+   ```
+   If you see `pinentry-mode loopback` in `gpg.conf` or `allow-loopback-pinentry` in `gpg-agent.conf`, **that's the problem.**
+
+5. **Disable loopback mode** (back up first):
+   ```bash
+   cp ~/.gnupg/gpg.conf ~/.gnupg/gpg.conf.bak
+   sed -i '' 's/^pinentry-mode loopback/#pinentry-mode loopback/' ~/.gnupg/gpg.conf
+   sed -i '' 's/^allow-loopback-pinentry/#allow-loopback-pinentry/' ~/.gnupg/gpg-agent.conf
+   ```
+
+6. **Fully restart the agent and smartcard daemon:**
+   ```bash
+   gpgconf --kill scdaemon
+   gpgconf --kill gpg-agent
+   gpgconf --launch gpg-agent
+   ```
+
+7. **Unplug and replug the YubiKey**, then retry:
+   ```bash
+   gpg --card-edit
+   ```
+   When GPG asks for the PIN, a **`pinentry-mac` GUI popup** will appear. Enter your PIN there: not in the terminal.
+
+### Still stuck?
+
+- **Test `pinentry-mac` directly** to confirm it runs at all:
+  ```bash
+  /opt/homebrew/bin/pinentry-mac
+  ```
+  Then type `GETPIN` + Enter. A popup should appear. Type `BYE` + Enter to exit. If no popup appears, macOS is blocking `pinentry-mac` itself: check **System Settings → Privacy & Security** for a blocked-app notification.
+
+- **Check for leftover GPG Suite** hijacking the socket:
+  ```bash
+  ls /Library/LaunchAgents/ 2>/dev/null | grep -i gpg
+  ls ~/Library/LaunchAgents/ 2>/dev/null | grep -i gpg
+  ls /usr/local/MacGPG2/ 2>/dev/null
+  ```
+  If any of these exist, remove the LaunchAgents and uninstall GPG Suite completely, then repeat the fix.
+
+- **Duplicate `pinentry-program` lines** in `gpg-agent.conf` can also cause issues. Open the file and make sure there's only one.
