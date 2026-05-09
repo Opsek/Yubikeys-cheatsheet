@@ -40,6 +40,10 @@ Watch a step-by-step video covering all of the steps:
 
 ### Steps to repeat on all your YubiKeys
 
+> 🍎 **macOS users:** Run all `ykman` commands below from the **built-in macOS Terminal app** (`/Applications/Utilities/Terminal.app`).
+> Third-party terminals such as **iTerm2**, **Warp**, **Alacritty**, **Kitty**, **Hyper**, or VS Code's integrated terminal can interfere with USB/smart-card access and may cause `ykman` to hang, fail to detect the YubiKey, or silently swallow PIN prompts.
+> If a `ykman` command misbehaves, switch to Terminal.app and try again before debugging anything else.
+
 1. Verify your device is genuine:  
    🔗 [Yubico genuine check](https://www.yubico.com/genuine/)
 
@@ -105,6 +109,9 @@ Before you begin, make sure you have:
 - Installed **YubiKey Manager** (for `ykman`): on macOS: `brew install ykman`  
   GitHub: https://github.com/Yubico/YubiKey-manager
 
+> 🍎 **macOS users — important:** Run every `ykman` command in this section from the **built-in macOS Terminal app** (`/Applications/Utilities/Terminal.app`), not from iTerm2, Warp, Alacritty, Kitty, Hyper, or VS Code's integrated terminal.
+> Third-party terminals frequently cause `ykman` to hang, fail to see the YubiKey, or silently fail PIN prompts because of how they sandbox USB / smart-card access. If a `ykman` command behaves strangely, the first thing to try is running it from Terminal.app.
+
 ### 🔐 YubiKey GPG (ed25519) → Signed Git Commit
 
 #### 1) Configure GPG pinentry
@@ -155,7 +162,8 @@ gpgconf --kill gpg-agent
 #### 2) (Optional) Clean-slate the YubiKey OpenPGP applet
 
 > ⚠️ Destroys any existing GPG keys on the key.
-> 
+>
+> 🍎 **macOS:** run these from **Terminal.app**, not iTerm2/Warp/etc. (see note at the top of this section).
 
 ```bash
 ykman openpgp reset -f
@@ -226,6 +234,8 @@ generate
 > ykman openpgp access change-admin-pin
 > ```
 >
+> 🍎 **macOS:** run these two commands from **Terminal.app**, not iTerm2 / Warp / Alacritty / VS Code's integrated terminal. Third-party terminals can cause `ykman` to hang or fail to see the YubiKey (see the note at the top of this section).
+>
 > Choose **strong, memorable PINs** for both User and Admin.
 
 
@@ -243,15 +253,44 @@ gpg --card-status
 
 Expect to see `ED25519 / CV25519` for the three slots.
 
-#### 5) Export your **public** key and add to GitHub (for commit verification)
+#### 5) Export your **Primary Public Key** and add to GitHub (for commit verification)
+
+You need to export the **Primary Public Key** (a.k.a. the **master / primary key**), **not** one of the subkeys. GitHub matches commit signatures against the primary key listed on your account.
+
+##### Find your Primary Public Key ID
+
+Run:
 
 ```bash
-EMAIL="you@example.com"
-gpg --armor --export "$EMAIL" > ~/YubiKey-gpg-public.asc
+gpg --list-keys --keyid-format=long "you@example.com"
+```
+
+You'll see something like:
+
+```
+pub   ed25519/ABCDEF1234567890 2025-10-17 [SC]
+      F1E2D3C4B5A697887766554433221100AABBCCDD
+uid   [ultimate] John Doe <john@example.com>
+sub   cv25519/1111222233334444 2025-10-17 [E]
+sub   ed25519/5555666677778888 2025-10-17 [A]
+```
+
+The **Primary Public Key** is the one on the line starting with `pub` — in this example, `ABCDEF1234567890`. The lines starting with `sub` are subkeys (encryption `[E]` and authentication `[A]`); **don't use those**.
+
+> 💡 You can also use the **full 40-character fingerprint** (the line directly under `pub`) instead of the short ID — it's unambiguous and recommended.
+
+##### Export it
+
+Replace `<PrimaryPublicKey>` with the ID (or fingerprint) you just found:
+
+```bash
+gpg --armor --export-options export-minimal --export <PrimaryPublicKey> > ~/YubiKey-gpg-public.asc
 cat ~/YubiKey-gpg-public.asc
 ```
 
-➡️ copy everything and paste at: https://github.com/settings/keys  →  "New GPG key"
+The `--export-options export-minimal` flag strips unnecessary signatures and produces a smaller, cleaner public key block — easier for GitHub to ingest.
+
+➡️ copy everything (including the `-----BEGIN PGP PUBLIC KEY BLOCK-----` and `-----END PGP PUBLIC KEY BLOCK-----` lines) and paste at: https://github.com/settings/keys → **"New GPG key"**.
 
 #### 6) Configure Git to sign commits with your YubiKey
 
@@ -367,5 +406,7 @@ You should see a **"Good signature"** message.
   ls /usr/local/MacGPG2/ 2>/dev/null
   ```
   If any of these exist, remove the LaunchAgents and uninstall GPG Suite completely, then repeat the fix.
+
+- **Try from macOS Terminal.app** if you're using a third-party terminal (iTerm2, Warp, Alacritty, Kitty, Hyper, VS Code integrated terminal). These can interfere with USB / smart-card access and cause `ykman` and `gpg` to behave unpredictably with the YubiKey.
 
 - **Duplicate `pinentry-program` lines** in `gpg-agent.conf` can also cause issues. Open the file and make sure there's only one.
