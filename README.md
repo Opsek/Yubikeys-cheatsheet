@@ -320,6 +320,16 @@ git config --global gpg.program gpg
 git config --global user.email "john@example.com"
 ```
 
+> 💡 **Heads-up if you have a second YubiKey:** When you set up your **2nd YubiKey** and want to use / test it for commit signing, you have to re-run:
+>
+> ```bash
+> git config --global user.signingkey AAAAAAAAAAAAAAAA
+> ```
+>
+> with the **key ID of the key in the 2nd YubiKey**. Otherwise Git will keep asking you to plug in the *first* YubiKey you set up, because that's the key ID still configured.
+>
+> **TL;DR:** you can only have one key configured for signing at any time — swap `user.signingkey` whenever you switch which YubiKey you're signing with.
+
 5. Test signing a commit
 
 ```bash
