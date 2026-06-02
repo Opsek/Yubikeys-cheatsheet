@@ -253,7 +253,33 @@ gpg --card-status
 
 Expect to see `ED25519 / CV25519` for the three slots.
 
-#### 5) Export your **Primary Public Key** and add to GitHub (for commit verification)
+#### 5) (Recommended) Require a YubiKey touch for every signature
+
+By default, the YubiKey's OpenPGP **touch policy is `Off`** for all slots. That means once your User PIN has been entered and cached by `gpg-agent`, commits are signed **with no physical interaction at all**: any process running on your machine can sign on your behalf for as long as the YubiKey is plugged in.
+
+Enabling the touch policy on the **signature** slot forces a physical tap on the YubiKey for **every** signing operation, so a commit can't be created unless you're physically present to touch the key.
+
+```bash
+ykman openpgp keys set-touch sig on
+```
+
+Confirm it's enabled:
+
+```bash
+ykman openpgp info
+```
+
+You should see `Signature key: On` under **Touch policies**.
+
+> 🍎 **macOS:** run these from **Terminal.app**, not iTerm2 / Warp / Alacritty / Kitty / Hyper / VS Code's integrated terminal (see the note at the top of this section).
+>
+> 💡 **Older `ykman` / firmware:** on some builds the slot and policy must be uppercase (`ykman openpgp keys set-touch SIG ON`), and on `ykman` versions before 4.x the subcommand drops `keys` entirely (`ykman openpgp set-touch sig on`). You'll be prompted for the **Admin PIN**; to run it non-interactively add `-a <ADMIN_PIN> -f`.
+>
+> 💡 **Touch policy options:** `on` requires a touch for every signature. `cached` requires a touch but keeps it valid for ~15 seconds (gentler for rapid commits, slightly weaker). Avoid `fixed` / `cached-fixed` unless you're sure: they **can't be disabled without a full reset** of the OpenPGP applet.
+
+> 💡 From now on, every `git commit -S` will make the YubiKey **blink and wait for a tap**, and the commit won't complete until you touch the key. You can also enable the same protection on the authentication (`aut`) and encryption (`enc`) slots: `ykman openpgp keys set-touch aut on` and `ykman openpgp keys set-touch enc on`.
+
+#### 6) Export your **Primary Public Key** and add to GitHub (for commit verification)
 
 You need to export the **Primary Public Key** (a.k.a. the **master / primary key**), **not** one of the subkeys. GitHub matches commit signatures against the primary key listed on your account.
 
@@ -292,7 +318,7 @@ The `--export-options export-minimal` flag strips unnecessary signatures and pro
 
 ➡️ copy everything (including the `-----BEGIN PGP PUBLIC KEY BLOCK-----` and `-----END PGP PUBLIC KEY BLOCK-----` lines) and paste at: https://github.com/settings/keys → **"New GPG key"**.
 
-#### 6) Configure Git to sign commits with your YubiKey
+#### 7) Configure Git to sign commits with your YubiKey
 
 1. Show the YubiKey key information:
 
