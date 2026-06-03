@@ -2,9 +2,16 @@
 
 This repo contains tips on how to properly use your YubiKeys.
 
-- 1️⃣ Step by step YubiKey setup
-- 2️⃣ Tutorial on how to sign GitHub commits with YubiKey
-- More to come 😉
+## 📋 Summary
+
+| Section | What it covers |
+|---------|----------------|
+| [YubiKey Interfaces / Applications](#yubikey-interfaces--applications) | What each YubiKey app does (FIDO2, OpenPGP, PIV, OATH, etc.) and when to use it |
+| [1️⃣ YubiKey set up](#1️⃣-yubikey-set-up) | First-time setup: PINs, interfaces, registering on accounts |
+| &nbsp;&nbsp;↳ [Example: Set up a YubiKey on Gmail](#example-set-up-a-yubikey-on-gmail-google-account) | Walkthrough of registering a key on a Google account |
+| [2️⃣ Sign your commits with your YubiKey](#2️⃣-sign-your-commits-with-your-yubikey) | Generate an OpenPGP key on the card and sign Git commits, with touch |
+| [3️⃣ Encrypting files with GPG + YubiKey](#3️⃣-encrypting-files-with-gpg--yubikey) | Encrypt a file so it can only be opened with the key present and touched |
+| [🛠️ Troubleshooting: PIN prompt doesn't respond](#%EF%B8%8F-troubleshooting-pin-prompt-doesnt-respond) | Fixing the macOS pinentry / loopback freeze |
 
 ## YubiKey Interfaces / Applications
 
@@ -369,6 +376,88 @@ git log --show-signature -1
 ```
 
 You should see a **"Good signature"** message.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 3️⃣ Encrypting files with GPG + YubiKey
+
+Encrypt a file so it can only be opened when your YubiKey is physically present and touched. This reuses the same OpenPGP key from section 2: encryption uses the **encryption (`cv25519`) subkey**, whereas signing used the signature subkey.
+
+> 🍎 **macOS users:** run every `ykman` command below from the **built-in Terminal.app**, not iTerm2 / Warp / Alacritty / Kitty / Hyper / VS Code's integrated terminal (same reason as the rest of this guide).
+
+> ✅ **Prerequisites:** you've completed section 2, so the **OpenPGP interface is enabled**, your **keys are generated on the card**, and **`pinentry-mac` is configured**. If `gpg --card-status` lists your three slots, you're ready.
+
+#### 1) Identify the encryption key
+
+```bash
+ykman openpgp info        # the three slots + their touch policy
+gpg --card-status         # shows the labeled "Encryption key" line
+```
+
+How to read it:
+
+- The **`Encryption key....:`** line in `gpg --card-status` is the key that opens files.
+- In the subkey list, the **`cv25519`** subkey is the encryption key (`cv25519` = ECDH / encryption). The `ed25519` subkeys are sign / auth.
+- In `gpg --list-keys`, that same subkey carries the **`[E]`** usage flag.
+- The recipient ID is the **last 16 hex chars** of that subkey's fingerprint.
+
+#### 2) Require a touch to decrypt
+
+By default the **encryption slot's touch policy is `Off`**: once the User PIN is cached by `gpg-agent`, any process can decrypt your files silently while the key is plugged in. Turn touch on so every decryption needs a physical tap:
+
+```bash
+ykman openpgp keys set-touch enc on
+```
+
+Enter the **Admin PIN** when prompted, confirm, then verify:
+
+```bash
+ykman openpgp info
+```
+
+The **Decryption key** must now read **Touch policy: On**.
+
+> 💡 **Policy options:** `on` = a touch for every decrypt. `cached` = one touch valid for ~15 seconds. Avoid `fixed` / `cached-fixed` unless you're sure: they **can't be disabled without a full reset** of the OpenPGP applet (which wipes its keys).
+
+#### 3) Encrypt a file
+
+Encryption uses only the **public** key, so there is no PIN and no touch at this step. Replace `<ENC_KEYID>` with your encryption subkey's 16-char ID; the trailing `!` forces that exact subkey:
+
+```bash
+echo "this is my secret note - $(date)" > secret.txt
+
+gpg --encrypt --recipient <ENC_KEYID>! secret.txt
+
+ls -l secret.txt.gpg      # the encrypted blob
+cat secret.txt.gpg        # binary garbage = good
+```
+
+#### 4) Decrypt the file (PIN + touch)
+
+Remove the plaintext, then decrypt. A **`pinentry-mac` popup** asks for your User PIN, then the **YubiKey blinks → tap it**:
+
+```bash
+rm secret.txt
+gpg --decrypt secret.txt.gpg
+```
+
+The note prints only after the touch.
+
+#### 5) Prove the gate is real
+
+Run decrypt again and **do not** touch the key:
+
+```bash
+gpg --decrypt secret.txt.gpg
+```
+
+It hangs, then fails (card operation cancelled) instead of opening. That is your proof that nothing decrypts silently: the file at rest is inert without the physical tap.
+
+> 💡 **Encrypt a whole folder:** `tar cz mydir | gpg --encrypt --recipient <ENC_KEYID>! -o mydir.tgz.gpg`
+>
+> ⚠️ The private key never leaves the YubiKey, so **lose the key = lose the data.** Encrypt to a **second YubiKey** as well by adding another recipient (`--recipient <KEY1>! --recipient <KEY2>!`), or keep an offline backup key, so a lost token isn't permanent data loss.
+
+> 💡 **`gpg: decryption failed: No secret key`** → run `gpg --card-status` once so GPG binds the card, then retry. If the PIN popup never appears, see [🛠️ Troubleshooting](#%EF%B8%8F-troubleshooting-pin-prompt-doesnt-respond).
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
