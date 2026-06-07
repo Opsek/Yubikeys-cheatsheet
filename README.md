@@ -11,6 +11,7 @@ This repo contains tips on how to properly use your YubiKeys.
 | &nbsp;&nbsp;↳ [Example: Set up a YubiKey on Gmail](#example-set-up-a-yubikey-on-gmail-google-account) | Walkthrough of registering a key on a Google account |
 | [2️⃣ Sign your commits with your YubiKey](#2️⃣-sign-your-commits-with-your-yubikey) | Generate an OpenPGP key on the card and sign Git commits, with touch |
 | [3️⃣ Encrypting files with GPG + YubiKey](#3️⃣-encrypting-files-with-gpg--yubikey) | Encrypt a file so it can only be opened with the key present and touched |
+| [4️⃣ KeePassXC setup with YubiKey (Challenge-Response)](#4️⃣-keepassxc-setup-with-yubikey-challenge-response) | Protect a KeePassXC password database so it can only be unlocked with the key present and touched |
 | [🛠️ Troubleshooting: PIN prompt doesn't respond](#%EF%B8%8F-troubleshooting-pin-prompt-doesnt-respond) | Fixing the macOS pinentry / loopback freeze |
 
 ## YubiKey Interfaces / Applications
@@ -458,6 +459,120 @@ It hangs, then fails (card operation cancelled) instead of opening. That is your
 > ⚠️ The private key never leaves the YubiKey, so **lose the key = lose the data.** Encrypt to a **second YubiKey** as well by adding another recipient (`--recipient <KEY1>! --recipient <KEY2>!`), or keep an offline backup key, so a lost token isn't permanent data loss.
 
 > 💡 **`gpg: decryption failed: No secret key`** → run `gpg --card-status` once so GPG binds the card, then retry. If the PIN popup never appears, see [🛠️ Troubleshooting](#%EF%B8%8F-troubleshooting-pin-prompt-doesnt-respond).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 4️⃣ KeePassXC setup with YubiKey (Challenge-Response)
+ 
+Create a KeePassXC database encrypted with **KDBX 4 + ChaCha20-256 + Argon2id** and protected by a **YubiKey in HMAC-SHA1 Challenge-Response mode** with **touch enforced**.
+ 
+### 🧠 How it works (read this first)
+ 
+KeePassXC unlocks the database using the YubiKey's **OTP** application in **HMAC-SHA1 Challenge-Response** mode. It does **not** use FIDO2/WebAuthn or OATH-HOTP for this.
+ 
+Challenge-response is **deterministic**: KeePassXC stores a fixed challenge in the database header, the YubiKey computes `HMAC-SHA1(secret, challenge)` and returns the same response every time. That response is mixed into the key derivation, so the database can be decrypted reproducibly, but only by a key that holds the correct secret.
+ 
+Two consequences drive the whole setup:
+ 
+- The secret is written into the key and **cannot be read back out**. There is no way to "export" it later for backup.
+- So the only way to have a spare key is to program **every** key with the **same secret** *during* setup. Two YubiKeys with the same secret are fully interchangeable. If you lose the only key holding the secret, the database is **unrecoverable**.
+### Prerequisites
+ 
+- **KeePassXC** 2.7 or newer
+- **Two YubiKeys** (ideally three): one for daily use, one or two as offline backups
+- **Yubico Authenticator** (recommended GUI). `ykman` or the legacy *YubiKey Personalization Tool* also work
+- On **Linux**: the `yubikey-manager` package (provides `ykman`) and the `yubikey-personalization` library with its udev rules, so KeePassXC can detect the key
+> 💡 **Verify the key is detected:** plug it in and open Yubico Authenticator, the device should appear in the app. If KeePassXC later can't see it, the cause is almost always the **OTP interface being disabled** (see Troubleshooting).
+ 
+### Steps to repeat on all your YubiKeys
+ 
+#### 1) Enable the OTP application
+ 
+In Yubico Authenticator open the menu → **Toggle applications** (interfaces) and make sure **OTP** (Yubico OTP) is enabled. If it's off, challenge-response won't work at all.
+ 
+![Yubico Authenticator Toggle applications with Yubico OTP enabled](https://github.com/Opsek/Yubikeys-cheatsheet/raw/main/keepassxc-toggle-applications-otp.png)
+ 
+#### 2) Program Slot 2 as Challenge-Response (HMAC-SHA1)
+ 
+- Go to the **Slots** section and pick **Slot 2 (long-touch)**. Slot 1 usually ships with a factory Yubico OTP credential registered with YubiCloud, so using Slot 2 avoids overwriting it.
+- Select **Challenge-Response (HMAC-SHA1)** on Slot 2.
+- **Set the secret** (use the same secret on every key, see the note below).
+- Enable **"Require touch"** so a physical touch is forced on every unlock. A remote attacker with access to your machine still can't unlock the database silently.
+![KeePassXC Challenge-Response slot config with Secret key field and Require touch enabled](https://github.com/Opsek/Yubikeys-cheatsheet/raw/main/keepassxc-challenge-response-touch.png)
+ 
+> ⚠️ Repeat this step on **every** backup key using the **exact same secret**.
+ 
+#### 3) Destroy the temporary secret
+ 
+Once **all** keys are programmed and verified, securely delete every temporary copy of the secret: the scratch note, clipboard, any file. You don't need it anymore, it now lives only inside the keys and can't be read back.
+ 
+### Create the database in KeePassXC
+ 
+Open KeePassXC → **Database → New Database**.
+ 
+#### Step 1: Name and description
+ 
+Set a name (e.g. `Passwords`) and an optional description, then click **Continue**.
+ 
+![KeePassXC new database General Database Information with name and description](https://github.com/Opsek/Yubikeys-cheatsheet/raw/main/keepassxc-new-database-name.png)
+ 
+#### Step 2: Encryption settings
+ 
+Open **Advanced Settings** and configure:
+ 
+| Parameter | Value | Why |
+| --- | --- | --- |
+| Database Format | **KDBX 4.0** | Required for the modern KDF and AEAD cipher below |
+| Encryption Algorithm | **ChaCha20 (256-bit)** | Fast, constant-time AEAD cipher, no AES-NI dependency |
+| Key Derivation Function | **Argon2id** | Memory-hard KDF, side-channel resistant |
+ 
+Click **Continue**.
+ 
+![KeePassXC encryption settings ChaCha20 256-bit and Argon2id KDBX 4](https://github.com/Opsek/Yubikeys-cheatsheet/raw/main/keepassxc-encryption-settings.png)
+ 
+#### Step 3: Database credentials
+ 
+- **Set a strong master password.** This stays as your first factor, the YubiKey is an *additional* factor, not a replacement.
+- **Connect the primary YubiKey.**
+- Click **Add additional protection → Add Challenge-Response**.
+- In the hardware key dropdown, select your YubiKey and **Slot 2 - Challenge-Response** (the slot you programmed above).
+![KeePassXC add Challenge-Response with YubiKey selected on Slot 2](https://github.com/Opsek/Yubikeys-cheatsheet/raw/main/keepassxc-add-challenge-response-slot2.png)
+ 
+> 💡 The key must be connected to appear in the dropdown. If you enabled touch, it may blink during this step, so touch it.
+ 
+Click **Done / Create** and choose where to save the `.kdbx` file.
+ 
+### ✅ Verify unlocking
+ 
+1. Lock the database (**Database → Lock Database**) or close KeePassXC.
+2. Reopen the `.kdbx` file.
+3. Enter the master password **with the YubiKey connected**.
+4. The key blinks → **touch it**.
+5. The database opens.
+Now repeat the whole test with the **second key** to confirm the backup actually works. Don't skip this, it's the only point where you can catch a key programmed with the wrong secret while recovery is still trivial.
+ 
+### Backup and recovery
+ 
+- **Two or more keys with the same secret** are your only recovery plan.
+- Keep them in **different physical locations** (one on you, one in a safe).
+- If you lose **every** key carrying that secret, the database **cannot be opened**. There is no KeePassXC-side recovery, the response is part of the key, and the secret was never exportable.
+### 🛠️ Troubleshooting
+ 
+**KeePassXC doesn't detect the YubiKey**
+- Confirm the **OTP** application/interface is enabled (Step 1).
+- On Linux, confirm `yubikey-personalization` and its udev rules are installed.
+**The key blinks but nothing happens when unlocking**
+- You enabled touch, so you must physically **touch** the key within the time window (about 15 s).
+**I want to add challenge-response to an existing database**
+- **Database → Database Security → Database Credentials → Add additional protection → Add Challenge-Response**, with the key connected.
+### Flow summary
+ 
+- Install KeePassXC and confirm the key is detected.
+- Enable OTP, then program **Slot 2** as Challenge-Response (HMAC-SHA1) **with touch**.
+- Reuse the **same secret** on a second key (backup), then destroy the temporary secret.
+- Create the database: **KDBX 4.0 + ChaCha20-256 + Argon2id**.
+- Add a master password **plus** challenge-response (Slot 2).
+- Verify unlocking with **both** keys.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
