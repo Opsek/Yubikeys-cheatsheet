@@ -490,7 +490,7 @@ Two consequences drive the whole setup:
  
 In Yubico Authenticator open the menu → **Toggle applications** (interfaces) and make sure **OTP** (Yubico OTP) is enabled. If it's off, challenge-response won't work at all.
  
-![Yubico Authenticator Toggle applications with Yubico OTP enabled](https://github.com/Opsek/Yubikeys-cheatsheet/raw/main/keepassxc-toggle-applications-otp.png)
+![Yubico Authenticator Toggle applications with Yubico OTP enabled](keepassxc-toggle-applications-otp.png)
  
 #### 2) Program Slot 2 as Challenge-Response (HMAC-SHA1)
  
@@ -498,7 +498,8 @@ In Yubico Authenticator open the menu → **Toggle applications** (interfaces) a
 - Select **Challenge-Response (HMAC-SHA1)** on Slot 2.
 - **Set the secret** (use the same secret on every key, see the note below).
 - Enable **"Require touch"** so a physical touch is forced on every unlock. A remote attacker with access to your machine still can't unlock the database silently.
-![KeePassXC Challenge-Response slot config with Secret key field and Require touch enabled](https://github.com/Opsek/Yubikeys-cheatsheet/raw/main/keepassxc-challenge-response-touch.png)
+
+![KeePassXC Challenge-Response slot config with Secret key field and Require touch enabled](keepassxc-challenge-response-touch.png)
  
 > ⚠️ Repeat this step on **every** backup key using the **exact same secret**.
  
@@ -514,7 +515,7 @@ Open KeePassXC → **Database → New Database**.
  
 Set a name (e.g. `Passwords`) and an optional description, then click **Continue**.
  
-![KeePassXC new database General Database Information with name and description](https://github.com/Opsek/Yubikeys-cheatsheet/raw/main/keepassxc-new-database-name.png)
+![KeePassXC new database General Database Information with name and description](keepassxc-new-database-name.png)
  
 #### Step 2: Encryption settings
  
@@ -528,7 +529,7 @@ Open **Advanced Settings** and configure:
  
 Click **Continue**.
  
-![KeePassXC encryption settings ChaCha20 256-bit and Argon2id KDBX 4](https://github.com/Opsek/Yubikeys-cheatsheet/raw/main/keepassxc-encryption-settings.png)
+![KeePassXC encryption settings ChaCha20 256-bit and Argon2id KDBX 4](keepassxc-encryption-settings.png)
  
 #### Step 3: Database credentials
  
@@ -536,7 +537,8 @@ Click **Continue**.
 - **Connect the primary YubiKey.**
 - Click **Add additional protection → Add Challenge-Response**.
 - In the hardware key dropdown, select your YubiKey and **Slot 2 - Challenge-Response** (the slot you programmed above).
-![KeePassXC add Challenge-Response with YubiKey selected on Slot 2](https://github.com/Opsek/Yubikeys-cheatsheet/raw/main/keepassxc-add-challenge-response-slot2.png)
+
+![KeePassXC add Challenge-Response with YubiKey selected on Slot 2](keepassxc-add-challenge-response-slot2.png)
  
 > 💡 The key must be connected to appear in the dropdown. If you enabled touch, it may blink during this step, so touch it.
  
